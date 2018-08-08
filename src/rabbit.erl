@@ -16,6 +16,10 @@
 
 -module(rabbit).
 
+%% Transitional step until we can require Erlang/OTP 21 and
+%% use the now recommended try/catch syntax for obtaining the stack trace.
+-compile(nowarn_deprecated_function).
+
 -behaviour(application).
 
 -export([start/0, boot/0, stop/0,
@@ -70,11 +74,17 @@
                     {requires,    database},
                     {enables,     external_infrastructure}]}).
 
+-rabbit_boot_step({code_server_cache,
+                   [{description, "code_server cache server"},
+                    {mfa,         {rabbit_sup, start_child, [code_server_cache]}},
+                    {requires,    rabbit_alarm},
+                    {enables,     file_handle_cache}]}).
+
 -rabbit_boot_step({file_handle_cache,
                    [{description, "file handle cache server"},
                     {mfa,         {rabbit, start_fhc, []}},
                     %% FHC needs memory monitor to be running
-                    {requires,    rabbit_alarm},
+                    {requires,    code_server_cache},
                     {enables,     worker_pool}]}).
 
 -rabbit_boot_step({worker_pool,
